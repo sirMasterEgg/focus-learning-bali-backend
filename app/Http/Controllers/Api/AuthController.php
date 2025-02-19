@@ -79,7 +79,6 @@ class AuthController
                 $user = User::create([
                     'email' => $payload['email'],
                     'name' => $payload['name'],
-                    'avatar' => $payload['picture'],
                     'email_verified_at' => Carbon::now(),
                 ]);
 
