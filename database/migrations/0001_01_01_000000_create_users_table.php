@@ -13,11 +13,25 @@ return new class extends Migration {
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('email')->unique();
+            $table->string('name');
+            $table->enum('title', ['Mr.', 'Mrs.', 'Miss'])->default('Mr.');
+            $table->string('avatar')->nullable();
+            $table->string('password')->nullable();
+
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
             $table->enum('role', ['user', 'admin'])->default('user');
-            $table->rememberToken();
             $table->timestamps();
+        });
+
+        Schema::create('users_oauth', function (Blueprint $table) {
+            $table->string('provider');
+            $table->string('provider_user_id');
+            $table->uuid('user_id')->unique();
+
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

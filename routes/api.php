@@ -4,12 +4,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/admin/register', [\App\Http\Controllers\Api\AdminController::class, 'register']);
 
-Route::get('/auth/tes', [\App\Http\Controllers\Api\AuthController::class, 'tes']);
-Route::get('/auth/cb', [\App\Http\Controllers\Api\AuthController::class, 'cb']);
-
 Route::prefix('/auth')->group(function () {
     Route::post('/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+    Route::post('/login/google', [\App\Http\Controllers\Api\AuthController::class, 'loginGoogle']);
     Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
 
     Route::get('/confirm-email/verify/{id}', [\App\Http\Controllers\Api\AuthController::class, 'verifyConfirmEmail'])->name('verification.verify');

@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Classes\ApiResponse;
+use App\Classes\GoogleClientInstance;
+use App\Http\Requests\Auth\GoogleLoginRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetCodePasswordRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\RegisterResource;
 use App\Mail\SendResetPasswordCode;
 use App\Models\PersonalAccessToken;
@@ -15,10 +18,8 @@ use Auth;
 use Carbon\Carbon;
 use Hash;
 use Illuminate\Http\Request;
-use Laravel\Socialite\Facades\Socialite;
 use Mail;
 use Symfony\Component\HttpFoundation\Response;
-use Validator;
 
 class AuthController
 {
@@ -26,6 +27,7 @@ class AuthController
     {
         $user = User::create([
             'email' => $request->email,
+            'name' => $request->name,
             'password' => Hash::make($request->password),
         ]);
 
@@ -48,8 +50,54 @@ class AuthController
 
         $token = $user->createToken('auth_token', expiresAt: Carbon::now()->addMonth())->plainTextToken;
 
-        return ApiResponse::sendResponse(['user' => $user, 'token' => $token], 'Successfully logged in');
+        return ApiResponse::sendResponse([
+            'user' => $user,
+            'token' => $token,
+        ], 'Successfully logged in');
 
+    }
+
+    public function loginGoogle(GoogleLoginRequest $request)
+    {
+        $googleInstance = GoogleClientInstance::getInstance();
+        $token = $request->input('id_token');
+
+        $payload = $googleInstance->verifyIdToken($token);
+
+        if (!$payload || !isset($payload)) {
+            return ApiResponse::sendResponse(null, 'Invalid token', Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user = User::whereHas('userOauth', function ($query) use ($payload) {
+            $query->where('provider', 'google')
+                ->where('provider_user_id', $payload['sub']);
+        })->first();
+
+
+        if (!$user || !isset($user)) {
+            $user = \DB::transaction(function () use ($payload) {
+                $user = User::create([
+                    'email' => $payload['email'],
+                    'name' => $payload['name'],
+                    'avatar' => $payload['picture'],
+                    'email_verified_at' => Carbon::now(),
+                ]);
+
+                $user->userOauth()->create([
+                    'provider' => 'google',
+                    'provider_user_id' => $payload['sub'],
+                ]);
+
+                return $user;
+            });
+        }
+
+        $token = $user->createToken('auth_token', expiresAt: Carbon::now()->addMonth())->plainTextToken;
+
+        return ApiResponse::sendResponse([
+            'user' => $user,
+            'token' => $token,
+        ], 'Successfully logged in');
     }
 
     public function logout()
@@ -89,11 +137,11 @@ class AuthController
         return ApiResponse::sendResponse(null, 'Email verification link has been sent to your email');
     }
 
-    public function resetPassword(Request $request)
+    public function resetPassword(ResetPasswordRequest $request)
     {
-        $validated = Validator::validate($request->only('email'), [
-            'email' => ['required', 'email', 'max:254'],
-        ]);
+        $validated = [
+            'email' => $request->input('email'),
+        ];
 
         ResetCodePassword::where('email', $validated['email'])->delete();
 
@@ -141,19 +189,5 @@ class AuthController
     public function user()
     {
         return ApiResponse::sendResponse(Auth::user(), 'Successfully retrieved user');
-    }
-
-    public function tes()
-    {
-        $url = Socialite::driver('google')
-            ->stateless()
-            ->redirect()
-            ->getTargetUrl();
-        return ApiResponse::sendResponse(['url' => $url], 'tes');
-    }
-
-    public function cb()
-    {
-        return ApiResponse::sendResponse(null, 'cb');
     }
 }
