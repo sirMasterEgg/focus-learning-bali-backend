@@ -12,7 +12,9 @@ class SavedCard extends Model
     use SoftDeletes, HasUuids;
 
     protected $fillable = [
+        'user_id',
         'card_token',
+        'masked_card',
         'card_expiration',
     ];
 

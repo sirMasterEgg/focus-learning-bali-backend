@@ -9,14 +9,20 @@ return new class extends Migration {
     {
         Schema::create('donations', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->string('human_readable_id')->unique();
+
             $table->string('title');
-            $table->longText('description');
             $table->string('recipient');
-            $table->string('quote');
+            $table->longText('description');
+
+            $table->string('thumbnail');
+            $table->string('program_image');
+
             $table->unsignedBigInteger('current_donation')->default(0);
             $table->unsignedBigInteger('target');
-            $table->string('banner');
-            $table->boolean('accept_donation')->default(true);
+
+            $table->boolean('is_active')->default(true);
+
             $table->timestamps();
             $table->softDeletes();
         });

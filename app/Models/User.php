@@ -17,6 +17,7 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable, HasApiTokens, HasUuids;
 
     protected $fillable = [
+        'human_readable_id',
         'name',
         'title',
         'avatar',
@@ -47,11 +48,44 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function donations(): BelongsToMany
     {
-        return $this->belongsToMany(Donation::class, 'users_donations');
+        return $this->belongsToMany(Donation::class, 'users_donations')->using(UserDonation::class);
     }
 
     public function userOauth(): HasOne
     {
         return $this->hasOne(UserOauth::class);
+    }
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->human_readable_id)) {
+                $model->human_readable_id = self::generateHumanReadableId();
+            }
+        });
+    }
+
+    public static function generateHumanReadableId(): string
+    {
+        $prefix = 'USER';
+        $date = now()->format('Ymd');
+
+        $lastRecord = self::where('human_readable_id', 'like', $prefix . $date . '%')
+            ->orderBy('human_readable_id', 'desc')
+            ->lockForUpdate()
+            ->first();
+
+        if ($lastRecord) {
+            $lastSequence = (int)substr($lastRecord->human_readable_id, -5);
+            $nextSequence = $lastSequence + 1;
+        } else {
+            $nextSequence = 1;
+        }
+
+        $sequenceStr = str_pad((string)$nextSequence, 5, '0', STR_PAD_LEFT);
+
+        return $prefix . $date . $sequenceStr;
     }
 }

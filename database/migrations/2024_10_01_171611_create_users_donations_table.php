@@ -14,14 +14,22 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
             $table->uuid('donation_id');
-            $table->string('name');
+
+            $table->string('human_readable_id')->unique();
+
+            $table->string('donation_name');
+            $table->string('donation_email');
+
+            $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('phone_number')->nullable();
             $table->unsignedBigInteger('amount');
 
-            $table->string('payment_id');
-            $table->string('payment_method');
-            $table->string('payment_status');
+            $table->string('payment_id')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->string('payment_status')->nullable();
+            $table->json('payment_response')->nullable();
 
-            $table->softDeletes();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();

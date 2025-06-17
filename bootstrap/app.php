@@ -12,9 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append([
-            \App\Http\Middleware\ForceJsonRequestMiddleware::class,
+            \App\Http\Middleware\JsonRequestMiddleware::class,
+            \App\Http\Middleware\RequestIdMiddleware::class,
+        ]);
+        $middleware->alias([
+            'isAdmin' => \App\Http\Middleware\IsAdminMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        \Sentry\Laravel\Integration::handles($exceptions);
     })->create();

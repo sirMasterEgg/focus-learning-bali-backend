@@ -126,4 +126,6 @@ return [
     'admin' => [
         'access' => env('ADMIN_ACCESS'),
     ],
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
 ];

@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
             $table->string('card_token');
+            $table->string('masked_card');
             $table->dateTime('card_expiration');
             $table->timestamps();
             $table->softDeletes();

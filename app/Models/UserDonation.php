@@ -3,36 +3,42 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class Donation extends Model
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Relations\Pivot
+ * @mixin \Illuminate\Database\Eloquent\Builder
+ */
+class UserDonation extends Pivot
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids;
+
+    protected $table = 'users_donations';
 
     protected $fillable = [
+        'user_id',
+        'donation_id',
         'human_readable_id',
-        'title',
-        'recipient',
-        'description',
-        'thumbnail',
-        'program_image',
-        'current_donation',
-        'target',
-        'is_active',
+        'donation_name',
+        'donation_email',
+        'first_name',
+        'last_name',
+        'phone_number',
+        'amount',
+        'payment_id',
+        'payment_method',
+        'payment_status',
+        'payment_response',
     ];
 
     protected $casts = [
-        'current_donation' => 'double',
-        'target' => 'double',
-        'is_active' => 'boolean',
+        'payment_response' => 'json',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    public function users(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'users_donations')->using(UserDonation::class);
-    }
 
     protected static function boot(): void
     {
@@ -45,10 +51,9 @@ class Donation extends Model
         });
     }
 
-
     public static function generateHumanReadableId(): string
     {
-        $prefix = 'DONATION';
+        $prefix = 'DONATIONRECEIPT';
         $date = now()->format('Ymd');
 
         $lastRecord = self::where('human_readable_id', 'like', $prefix . $date . '%')
@@ -68,8 +73,15 @@ class Donation extends Model
         return $prefix . $date . $sequenceStr;
     }
 
-    public function getRouteKeyName(): string
+    // Define relationship to the User model
+    public function user(): BelongsTo
     {
-        return 'human_readable_id';
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Define relationship to the Donation model
+    public function donation(): BelongsTo
+    {
+        return $this->belongsTo(Donation::class, 'donation_id');
     }
 }
